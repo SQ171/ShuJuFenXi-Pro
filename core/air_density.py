@@ -33,19 +33,17 @@ def standard_air_density() -> float:
 
 
 def correction_factor(temp_c: float, pressure_hpa: float, rh_pct: float) -> float:
-    """推力修正系数 = ρ_标准 / ρ_实际
+    """等效因子 = sqrt(ρ_标准 / ρ_实际)
 
-    推力 ∝ 空气密度，修正后推力 = 实测推力 × correction_factor
-    修正后力效 = 修正后推力 / 功率 = 实测力效 × correction_factor
-
-    - 实际密度 > 标准密度 → cf < 1 (热天/低气压 → 修正后力效降低)
-    - 实际密度 < 标准密度 → cf > 1 (冷天/高气压 → 修正后力效升高)
+    推力 ∝ ρ，功率 ∝ ρ，力效 = 推力/功率 ≈ 常数 w.r.t. ρ
+    取平方根作为折中修正，避免对力效过度修正
     """
+    import numpy as np
     rho_actual = air_density(temp_c, pressure_hpa, rh_pct)
     rho_std = standard_air_density()
     if rho_actual <= 0:
         return 1.0
-    return rho_std / rho_actual
+    return float(np.sqrt(rho_std / rho_actual))
 
 
 def parse_env_from_metadata(metadata: dict) -> tuple[float, float, float]:
