@@ -62,9 +62,10 @@ class TestRun:
     file_info: dict
     metadata: dict
     df: pd.DataFrame
-    start_time: datetime
-    end_time: datetime
+    start_time: datetime | None
+    end_time: datetime | None
     duration_seconds: float
+    correction_factor: float = 1.0
 
 
 @dataclass

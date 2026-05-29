@@ -60,3 +60,13 @@ THROTTLE_STEPS = [20, 25, 30, 35, 40, 45, 50, 55, 60, 65]
 SAMPLING_RATE_HZ = 10
 STABILIZATION_SECONDS = 2.0
 MIN_STEP_DURATION_SECONDS = 5.0
+
+# ── 标准大气条件 (ISA sea level) ──
+STD_TEMP_C = 15.0          # 标准温度 °C
+STD_PRESSURE_HPA = 1013.25  # 标准大气压 hPa
+STD_RH_PCT = 0.0            # 标准相对湿度 %
+STD_AIR_DENSITY = 1.225     # 标准空气密度 kg/m³
+
+# 气体常数
+R_DRY_AIR = 287.058   # J/(kg·K) 干空气
+R_VAPOR = 461.495     # J/(kg·K) 水蒸气
