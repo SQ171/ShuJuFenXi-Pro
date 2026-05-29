@@ -14,8 +14,7 @@ def plot_health_radar(scores: dict[str, float], warn_line: float = 0.6) -> go.Fi
     categories = list(scores.keys())
     values = list(scores.values())
 
-    # 自动缩放到数据范围，下限不低于 max(0, min(scores)-0.1)
-    r_min = max(0.0, min(values) - 0.02)
+    r_min = max(0.0, min(values) - 0.10)
     r_max = 1.0
 
     fig = go.Figure()
