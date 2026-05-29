@@ -126,26 +126,13 @@ FEATURE_REGISTRY: list[FeatureDef] = [
 # 退化分析配置
 # ═══════════════════════════════════════════════════════════════
 
-DEGRADATION_SIGMA = 2.5
 DEGRADATION_MIN_SAMPLES = 5
-DEGRADATION_SLOPE_WARN_G_PER_WATT_HOUR = -0.05
 
 # ═══════════════════════════════════════════════════════════════
 # 图表配色
 # ═══════════════════════════════════════════════════════════════
 
-CHART_COLORS = {
-    "force_eff": "#DC143C",
-    "primary": "#DC143C",
-    "background": "#FFFFFF",
-    "grid": "#E8E8E8",
-    "anomaly": "#FF0000",
-    "trend_line": "#2C3E50",
-}
-
-# ═══════════════════════════════════════════════════════════════
 # 查询辅助
-# ═══════════════════════════════════════════════════════════════
 
 def get_metric_by_key(key: str) -> MetricDef | None:
     for m in ALL_METRICS:
@@ -156,10 +143,6 @@ def get_metric_by_key(key: str) -> MetricDef | None:
 
 def get_metrics_by_dimension(dim: Dimension) -> list[MetricDef]:
     return [m for m in ALL_METRICS if m.dimension == dim]
-
-
-def get_primary_metrics() -> list[MetricDef]:
-    return [m for m in ALL_METRICS if m.is_primary]
 
 
 def get_features_by_analysis_type(at: AnalysisType) -> list[FeatureDef]:

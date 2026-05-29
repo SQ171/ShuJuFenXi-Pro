@@ -4,6 +4,7 @@ import plotly.graph_objects as go
 import numpy as np
 import pandas as pd
 from core.models import Dimension
+from visualization.common import FORCE_EFF_COLOR
 
 
 def plot_health_radar(scores: dict[str, float]) -> go.Figure:
@@ -22,7 +23,7 @@ def plot_health_radar(scores: dict[str, float]) -> go.Figure:
         theta=categories + [categories[0]],
         fill="toself",
         fillcolor="rgba(220, 20, 60, 0.3)",
-        line=dict(color="#DC143C", width=2),
+        line=dict(color=FORCE_EFF_COLOR, width=2),
         name="当前健康评分",
     ))
 

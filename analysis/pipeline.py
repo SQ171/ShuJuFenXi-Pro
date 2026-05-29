@@ -16,11 +16,14 @@ class AnalysisContext:
     degradation_report: DegradationReport = field(default_factory=DegradationReport)
     anomaly_flags: pd.DataFrame | None = None
     comparison_table: pd.DataFrame | None = None
+    sigma: float = 2.5
 
 
-def run_pipeline(file_paths: list[str], ctx: AnalysisContext = None) -> AnalysisContext:
+def run_pipeline(file_paths: list[str], ctx: AnalysisContext = None,
+                 sigma: float = 2.5) -> AnalysisContext:
     if ctx is None:
         ctx = AnalysisContext(file_paths=file_paths)
+    ctx.sigma = sigma
 
     from analysis.loader import load_data
     from analysis.step_detector import detect_steps

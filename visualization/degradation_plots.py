@@ -2,12 +2,9 @@
 
 import numpy as np
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-import pandas as pd
-from core.models import DegradationResult, Dimension, AnalysisType
+from core.models import DegradationResult
 from core.constants import COL_CUMULATIVE_RUNTIME, COL_RUNTIME_HOURS
-from config import ALL_METRICS
-from visualization.common import base_layout, FORCE_EFF_COLOR, DIMENSION_COLORS, TREND_LINE_COLOR
+from visualization.common import base_layout, FORCE_EFF_COLOR, TREND_LINE_COLOR
 from scipy import stats
 
 
@@ -18,11 +15,7 @@ def plot_metric_degradation(df: pd.DataFrame, metric_key: str,
     if metric is None:
         return go.Figure()
 
-    if COL_RUNTIME_HOURS not in df.columns and COL_CUMULATIVE_RUNTIME in df.columns:
-        df = df.copy()
-        df[COL_RUNTIME_HOURS] = df[COL_CUMULATIVE_RUNTIME] / 3600.0
-
-    x_col = COL_RUNTIME_HOURS
+    x_col = COL_RUNTIME_HOURS if COL_RUNTIME_HOURS in df.columns else COL_CUMULATIVE_RUNTIME
 
     fig = go.Figure()
     values = df[[x_col, metric.col_name]].dropna()

@@ -1,10 +1,7 @@
 """台阶稳态分布图：箱线图 + 柱状图 + 误差棒"""
 
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 import pandas as pd
-import numpy as np
-from config import ALL_METRICS
 from core.models import MetricDef
 from visualization.common import base_layout
 

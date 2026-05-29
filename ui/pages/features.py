@@ -1,7 +1,6 @@
 """时域/频域特征专项分析页"""
 
 import streamlit as st
-import pandas as pd
 from ui.state import get_ctx, is_data_loaded
 from ui.components import render_signal_selector
 from visualization.feature_plots import plot_feature_trend, plot_fft_comparison, plot_feature_heatmap

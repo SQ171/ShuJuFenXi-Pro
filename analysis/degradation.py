@@ -1,18 +1,26 @@
-"""Pipeline S6: 退化趋势分析 — 趋势+时域+频域三类特征分别回归"""
+"""Pipeline S6: 退化趋势分析"""
 
 import numpy as np
 import pandas as pd
 from scipy import stats
 from analysis.pipeline import AnalysisContext
-from core.models import DegradationResult, DegradationReport, AnalysisType
-from core.constants import COL_CUMULATIVE_RUNTIME
+from core.models import DegradationResult, DegradationReport, AnalysisType, Dimension
 from config import ALL_METRICS, FEATURE_REGISTRY, DEGRADATION_MIN_SAMPLES
+
+_DIM_RESULT_MAP = {
+    Dimension.FORCE_EFF: "force_eff_results",
+    Dimension.ELECTRICAL: "electrical_results",
+    Dimension.MECHANICAL: "mechanical_results",
+    Dimension.THERMAL: "thermal_results",
+    Dimension.ENERGY: "energy_results",
+}
+
+_SIGNAL_DIM_MAP = {m.col_name: m.dimension for m in ALL_METRICS}
 
 
 def analyze_degradation(ctx: AnalysisContext) -> AnalysisContext:
     report = DegradationReport()
 
-    # ── 趋势分析：Metric 均值 vs 累计运行时间 ──
     if ctx.step_summary is not None and not ctx.step_summary.empty:
         for metric in ALL_METRICS:
             if not metric.degradation_sensitive:
@@ -35,7 +43,6 @@ def analyze_degradation(ctx: AnalysisContext) -> AnalysisContext:
                 if result:
                     _classify_result(report, result)
 
-    # ── 时域+频域特征退化分析 ──
     if ctx.feature_results:
         features_df = pd.DataFrame([{
             "source_signal": fr.source_signal,
@@ -61,22 +68,18 @@ def analyze_degradation(ctx: AnalysisContext) -> AnalysisContext:
                         if len(throttle_sub) < DEGRADATION_MIN_SAMPLES:
                             continue
 
-                        # 按累计运行时间排序
                         throttle_sub = throttle_sub.sort_values("cumulative_runtime")
                         values = throttle_sub["feature_value"].values
                         runtimes = throttle_sub["cumulative_runtime"].values
 
-                        # 用累计运行时间(小时)作为x轴
                         if len(values) < DEGRADATION_MIN_SAMPLES:
                             continue
-                        x_hours = runtimes / 3600.0
 
                         display_name = f"{signal}-{feat_def.display_name}"
-                        # 判断归属维度
-                        dim = _guess_dimension(signal)
+                        dim = _SIGNAL_DIM_MAP.get(signal, Dimension.MECHANICAL)
 
                         result = _linear_regression(
-                            x_hours, values, display_name, dim,
+                            runtimes / 3600.0, values, display_name, dim,
                             feat_def.analysis_type, throttle
                         )
                         if result:
@@ -88,19 +91,15 @@ def analyze_degradation(ctx: AnalysisContext) -> AnalysisContext:
 
 def _linear_regression(x: np.ndarray, y: np.ndarray, name: str,
                        dimension, analysis_type, throttle: float) -> DegradationResult | None:
-    if len(x) < DEGRADATION_MIN_SAMPLES or len(y) < DEGRADATION_MIN_SAMPLES:
-        return None
-    y = y[~np.isnan(y)]
-    x = x[:len(y)] if len(x) > len(y) else x
-    x = x[~np.isnan(x)]
-    min_len = min(len(x), len(y))
-    x, y = x[:min_len], y[:min_len]
+    nan_mask = ~np.isnan(x) & ~np.isnan(y)
+    x_clean = x[nan_mask]
+    y_clean = y[nan_mask]
 
-    if len(x) < DEGRADATION_MIN_SAMPLES:
+    if len(x_clean) < DEGRADATION_MIN_SAMPLES:
         return None
 
-    slope, intercept, r_value, p_value, _ = stats.linregress(x, y)
-    slope_per_hour = slope * 3600  # 如果x是秒，转为每小时
+    slope, intercept, r_value, p_value, _ = stats.linregress(x_clean, y_clean)
+    slope_per_hour = slope * 3600
 
     return DegradationResult(
         metric_or_feature=name,
@@ -112,33 +111,12 @@ def _linear_regression(x: np.ndarray, y: np.ndarray, name: str,
         r_squared=float(r_value ** 2),
         p_value=float(p_value),
         is_significant=p_value < 0.05,
-        data_points=len(x),
+        data_points=len(x_clean),
     )
 
 
 def _classify_result(report: DegradationReport, result: DegradationResult):
     report.results.append(result)
-    dim = result.dimension
-    if dim.value == "力效":
-        report.force_eff_results.append(result)
-    elif dim.value == "电气健康":
-        report.electrical_results.append(result)
-    elif dim.value == "机械健康":
-        report.mechanical_results.append(result)
-    elif dim.value == "热特征":
-        report.thermal_results.append(result)
-    elif dim.value == "能耗":
-        report.energy_results.append(result)
-
-
-def _guess_dimension(signal: str):
-    from core.models import Dimension
-    signal_map = {
-        "拉力-g": Dimension.MECHANICAL,
-        "扭矩-N•m": Dimension.MECHANICAL,
-        "光电转速-RPM": Dimension.MECHANICAL,
-        "电流-A": Dimension.ELECTRICAL,
-        "电压-V": Dimension.ELECTRICAL,
-        "红外温度-℃": Dimension.THERMAL,
-    }
-    return signal_map.get(signal, Dimension.MECHANICAL)
+    attr = _DIM_RESULT_MAP.get(result.dimension)
+    if attr:
+        getattr(report, attr).append(result)

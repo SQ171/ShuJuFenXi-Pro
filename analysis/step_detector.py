@@ -16,7 +16,6 @@ def detect_steps(ctx: AnalysisContext) -> AnalysisContext:
     if df is None or df.empty:
         return ctx
 
-    df = df.copy()
     df = df.sort_values([COL_SOURCE_FILE, COL_FRAME_TIME]).reset_index(drop=True)
 
     all_results = []
@@ -30,7 +29,6 @@ def detect_steps(ctx: AnalysisContext) -> AnalysisContext:
 
 
 def _detect_steps_single(df: pd.DataFrame, filename: str) -> pd.DataFrame:
-    df = df.copy()
     throttle_values = df[COL_THROTTLE].values
     n = len(df)
 
@@ -42,35 +40,10 @@ def _detect_steps_single(df: pd.DataFrame, filename: str) -> pd.DataFrame:
     cycle_nums = np.full(n, -1, dtype=int)
     is_stabilizing = np.full(n, False)
 
-    # 检测台阶边界：油门变化超过2%
-    current_step = 0
-    current_cycle = 0
+    # 扫描油门变化，检测过渡事件和循环重置
+    transition_events = []
     step_start_idx = 0
     prev_throttle = throttle_values[0]
-
-    for i in range(1, n):
-        delta = abs(throttle_values[i] - prev_throttle)
-        if delta > 2.0:
-            # 台阶过渡检测到
-            step_duration = (i - step_start_idx) / SAMPLING_RATE_HZ
-            if step_duration >= MIN_STEP_DURATION_SECONDS:
-                current_step += 1
-                step_start_idx = i
-
-        # 检测循环重置：油门从65%附近降到20%附近
-        if i > 0 and throttle_values[i - 1] > 50 and throttle_values[i] < 25:
-            current_cycle += 1
-            current_step = 0
-            step_start_idx = i
-
-        prev_throttle = throttle_values[i]
-
-    # 第二遍扫描：为每行分配实际的 step_id 和 nominal_throttle
-    current_step = 0
-    current_cycle = 0
-    step_start_idx = 0
-    prev_throttle = throttle_values[0]
-    transition_events = []  # 记录所有过渡边界
 
     for i in range(1, n):
         delta = abs(throttle_values[i] - prev_throttle)
@@ -78,11 +51,10 @@ def _detect_steps_single(df: pd.DataFrame, filename: str) -> pd.DataFrame:
             step_duration = (i - step_start_idx) / SAMPLING_RATE_HZ
             if step_duration >= MIN_STEP_DURATION_SECONDS:
                 transition_events.append(i)
+                step_start_idx = i
 
-        if i > 0 and throttle_values[i - 1] > 50 and throttle_values[i] < 25:
+        if throttle_values[i - 1] > 50 and throttle_values[i] < 25:
             transition_events.append(i)
-            current_cycle += 1
-            current_step = 0
 
         prev_throttle = throttle_values[i]
 

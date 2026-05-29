@@ -1,21 +1,14 @@
 """多文件叠加对比图"""
 
 import plotly.graph_objects as go
-import numpy as np
-import pandas as pd
 from core.constants import COL_SOURCE_FILE, COL_CUMULATIVE_RUNTIME, COL_RUNTIME_HOURS
-from config import ALL_METRICS
 from core.models import MetricDef
 from visualization.common import base_layout
 
 
 def plot_multi_file_overlay(df: pd.DataFrame, metric: MetricDef,
                              file_filter: list[str] = None) -> go.Figure:
-    if COL_RUNTIME_HOURS not in df.columns and COL_CUMULATIVE_RUNTIME in df.columns:
-        df = df.copy()
-        df[COL_RUNTIME_HOURS] = df[COL_CUMULATIVE_RUNTIME] / 3600.0
-
-    x_col = COL_RUNTIME_HOURS
+    x_col = COL_RUNTIME_HOURS if COL_RUNTIME_HOURS in df.columns else COL_CUMULATIVE_RUNTIME
     sub = df if file_filter is None else df[df[COL_SOURCE_FILE].isin(file_filter)]
 
     fig = go.Figure()

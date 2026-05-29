@@ -13,9 +13,11 @@ def render_kpi_cards(ctx) -> None:
     cols[1].metric("数据文件数", len(ctx.test_runs))
     if ctx.step_summary is not None:
         cols[2].metric("总循环数", ctx.step_summary["cycle_num"].nunique())
-    if ctx.step_summary is not None and "force_eff_mean" in ctx.step_summary.columns:
-        avg_eff = ctx.step_summary["force_eff_mean"].mean()
-        cols[3].metric("平均力效", f"{avg_eff:.1f} g/W")
+    if ctx.step_summary is not None:
+        eff_cols = [c for c in ctx.step_summary.columns if c.startswith("force_eff_")]
+        if eff_cols and "force_eff_mean" in ctx.step_summary.columns:
+            avg_eff = ctx.step_summary["force_eff_mean"].mean()
+            cols[3].metric("平均力效", f"{avg_eff:.1f} g/W")
 
 
 def render_metric_selector(label: str = "选择指标", key: str = "metric_selector"):
@@ -30,7 +32,8 @@ def render_dimension_selector(label: str = "选择维度", key: str = "dim_selec
 
 
 def render_signal_selector(label: str = "选择信号", key: str = "signal_selector"):
-    signals = ["拉力-g", "电流-A", "扭矩-N•m", "光电转速-RPM"]
+    signals = sorted(set(m.col_name for m in ALL_METRICS
+                        if m.dimension in (Dimension.MECHANICAL, Dimension.ELECTRICAL, Dimension.THERMAL)))
     return st.selectbox(label, signals, key=key)
 
 

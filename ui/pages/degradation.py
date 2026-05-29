@@ -43,17 +43,14 @@ def show():
             # 退化汇总
             st.divider()
             results = ctx.degradation_report
-            dim_results = []
-            if dim == Dimension.FORCE_EFF:
-                dim_results = results.force_eff_results
-            elif dim == Dimension.ELECTRICAL:
-                dim_results = results.electrical_results
-            elif dim == Dimension.MECHANICAL:
-                dim_results = results.mechanical_results
-            elif dim == Dimension.THERMAL:
-                dim_results = results.thermal_results
-            elif dim == Dimension.ENERGY:
-                dim_results = results.energy_results
+            _DIM_ATTRS = {
+                Dimension.FORCE_EFF: "force_eff_results",
+                Dimension.ELECTRICAL: "electrical_results",
+                Dimension.MECHANICAL: "mechanical_results",
+                Dimension.THERMAL: "thermal_results",
+                Dimension.ENERGY: "energy_results",
+            }
+            dim_results = getattr(results, _DIM_ATTRS.get(dim, ""), [])
 
             if dim_results:
                 render_degradation_table(dim_results, f"{dim.value} 退化率汇总")

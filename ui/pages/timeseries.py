@@ -2,7 +2,6 @@
 
 import streamlit as st
 from ui.state import get_ctx, is_data_loaded
-from ui.components import render_metric_selector, render_signal_selector
 from visualization.timeseries import plot_force_eff_timeseries, plot_multi_signal_timeseries
 from core.constants import COL_SYS_EFF, COL_THRUST, COL_IR_TEMP, COL_ELEC_POWER, COL_CURRENT
 

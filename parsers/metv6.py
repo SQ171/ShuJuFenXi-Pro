@@ -13,8 +13,7 @@ class METV6Parser(BaseParser):
         if not filepath.lower().endswith(".csv"):
             return False
         with open(filepath, "r", encoding="utf-8-sig") as f:
-            head = f.read(1024)
-        return "MET-V6" in head
+            return "MET-V6" in f.read(2048)
 
     def parse(self, filepath: str) -> ParsedData:
         with open(filepath, "r", encoding="utf-8-sig") as f:

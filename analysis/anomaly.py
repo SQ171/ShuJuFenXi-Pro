@@ -1,14 +1,12 @@
-"""Pipeline S7: 异常检测 — σ离群 + 特征偏离 + 趋势偏离"""
+"""Pipeline S7: 异常检测"""
 
 import numpy as np
-import pandas as pd
 from analysis.pipeline import AnalysisContext
 from core.constants import (
     COL_STEP_ID, COL_NOMINAL_THROTTLE, COL_CYCLE_NUM,
-    COL_SOURCE_FILE, COL_IS_STABILIZING, COL_SYS_EFF, COL_THRUST,
-    COL_ELEC_POWER,
+    COL_SOURCE_FILE, COL_IS_STABILIZING,
 )
-from config import ALL_METRICS, DEGRADATION_SIGMA
+from config import ALL_METRICS
 
 
 def detect_anomalies(ctx: AnalysisContext) -> AnalysisContext:
@@ -16,43 +14,47 @@ def detect_anomalies(ctx: AnalysisContext) -> AnalysisContext:
     if df is None or df.empty:
         return ctx
 
-    df = df.copy()
-    df["is_outlier"] = False
-    df["outlier_reason"] = ""
+    sigma = ctx.sigma
+    is_outlier = np.zeros(len(df), dtype=bool)
+    outlier_reasons = np.full(len(df), "", dtype=object)
 
     for (source_file, cycle_num, step_id), group in df.groupby(
         [COL_SOURCE_FILE, COL_CYCLE_NUM, COL_STEP_ID], sort=True
     ):
-        stable_mask = ~group[COL_IS_STABILIZING]
-        stable = group[stable_mask]
-        if len(stable) < 10:
+        stable_mask = ~group[COL_IS_STABILIZING].values
+        stable_indices = group.index[stable_mask]
+        if len(stable_indices) < 10:
             continue
-
-        indices = group.index[stable_mask]
 
         for metric in [m for m in ALL_METRICS if m.degradation_sensitive]:
             col = metric.col_name
-            if col not in stable.columns:
+            if col not in group.columns:
                 continue
-            values = stable[col].dropna()
+            values = group.loc[stable_indices, col].dropna()
             if len(values) < 10:
                 continue
 
-            mean = np.mean(values)
-            std = np.std(values)
+            mean = values.mean()
+            std = values.std()
             if std == 0:
                 continue
 
-            lower = mean - DEGRADATION_SIGMA * std
-            upper = mean + DEGRADATION_SIGMA * std
+            lower = mean - sigma * std
+            upper = mean + sigma * std
 
-            outlier_idx = values.index[(values < lower) | (values > upper)]
-            for idx in outlier_idx:
-                actual_idx = indices[stable.index.get_loc(idx)]
-                if not df.at[actual_idx, "is_outlier"]:
-                    df.at[actual_idx, "is_outlier"] = True
-                    df.at[actual_idx, "outlier_reason"] = f"{metric.display_name}偏离{mean:.2f}±{DEGRADATION_SIGMA}σ"
+            outlier_mask = (values < lower) | (values > upper)
+            if not outlier_mask.any():
+                continue
 
+            outlier_positions = values.index[outlier_mask]
+            reason = f"{metric.display_name}偏离{mean:.2f}±{sigma}σ"
+            for pos in outlier_positions:
+                if not is_outlier[pos]:
+                    is_outlier[pos] = True
+                    outlier_reasons[pos] = reason
+
+    df["is_outlier"] = is_outlier
+    df["outlier_reason"] = outlier_reasons
     ctx.anomaly_flags = df[["is_outlier", "outlier_reason"]]
     ctx.unified_df = df
     return ctx

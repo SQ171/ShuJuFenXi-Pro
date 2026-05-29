@@ -31,7 +31,8 @@ def render_sidebar():
                             f.write(uploaded.getbuffer())
                         file_paths.append(tmp_path)
 
-                    ctx = run_pipeline(file_paths)
+                    sigma = st.session_state.get("sigma", 2.5)
+                    ctx = run_pipeline(file_paths, sigma=sigma)
                     set_ctx(ctx)
                     st.success(f"加载完成: {len(file_paths)} 个文件, "
                                f"{ctx.runtime_info.total_runtime_seconds/3600:.2f}h")
