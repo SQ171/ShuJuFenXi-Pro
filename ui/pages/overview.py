@@ -81,6 +81,7 @@ def _render_file_comparison(ctx, ss_40):
     fig = go.Figure()
     fig.add_trace(go.Bar(
         x=labels, y=means,
+        error_y=dict(type="data", array=stds, color="#AAAAAA", thickness=1.5),
         marker_color=FORCE_EFF_COLOR,
         text=[f"{m:.2f}" for m in means],
         textposition="auto",
