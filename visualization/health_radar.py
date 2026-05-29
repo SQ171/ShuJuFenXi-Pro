@@ -10,11 +10,11 @@ from visualization.common import FORCE_EFF_COLOR
 _NO_DATA_FILL = 0.5
 
 
-def plot_health_radar(scores: dict[str, float], warn_line: float = 0.6) -> go.Figure:
+def plot_health_radar(scores: dict[str, float]) -> go.Figure:
     categories = list(scores.keys())
     values = list(scores.values())
 
-    r_min = max(0.0, min(min(values) - 0.05, warn_line - 0.05))
+    r_min = max(0.0, min(values) - 0.05)
     r_max = 1.0
 
     fig = go.Figure()
@@ -25,13 +25,6 @@ def plot_health_radar(scores: dict[str, float], warn_line: float = 0.6) -> go.Fi
         fillcolor="rgba(220, 20, 60, 0.3)",
         line=dict(color=FORCE_EFF_COLOR, width=2),
         name="当前健康评分",
-    ))
-    fig.add_trace(go.Scatterpolar(
-        r=[warn_line] * len(categories) + [warn_line],
-        theta=categories + [categories[0]],
-        fill="none",
-        line=dict(color="#FF9800", width=1.5, dash="dash"),
-        name=f"预警线 ({warn_line})",
     ))
 
     fig.update_layout(
