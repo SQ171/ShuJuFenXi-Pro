@@ -1,0 +1,65 @@
+"""列名常量、单位映射"""
+
+# ── CSV 原始列名 ──
+COL_FRAME_NUM = "帧数"
+COL_FRAME_TIME = "帧时间"
+COL_PWM = "PWM-μs"
+COL_THROTTLE = "油门-%"
+COL_THRUST = "拉力-g"
+COL_TORQUE = "扭矩-N•m"
+COL_VOLTAGE = "电压-V"
+COL_CURRENT = "电流-A"
+COL_RPM_COMM = "换相转速-RPM"
+COL_RPM_OPTICAL = "光电转速-RPM"
+COL_ELEC_POWER = "电功率-W"
+COL_SHAFT_POWER = "轴功率-W"
+COL_SYS_EFF = "系统力效-g/W"
+COL_PROP_EFF = "桨力效-g/W"
+COL_DRIVE_EFF = "电驱效率-%"
+COL_IR_TEMP = "红外温度-℃"
+COL_AH = "耗电量(Ah)-Ah"
+COL_WH = "耗电量(Wh)-Wh"
+
+# ── 计算列名 ──
+COL_CUMULATIVE_RUNTIME = "累计运行时间-s"
+COL_CYCLE_NUM = "循环序号"
+COL_STEP_ID = "台阶序号"
+COL_NOMINAL_THROTTLE = "名义油门-%"
+COL_IS_STABILIZING = "是否过渡期"
+COL_SOURCE_FILE = "数据来源"
+COL_RUNTIME_HOURS = "累计运行时间-h"
+
+# ── 数值列（用于类型转换） ──
+NUMERIC_COLUMNS = [
+    COL_PWM, COL_THROTTLE, COL_THRUST, COL_TORQUE,
+    COL_VOLTAGE, COL_CURRENT, COL_RPM_COMM, COL_RPM_OPTICAL,
+    COL_ELEC_POWER, COL_SHAFT_POWER, COL_SYS_EFF,
+    COL_PROP_EFF, COL_DRIVE_EFF, COL_IR_TEMP, COL_AH, COL_WH,
+]
+
+# ── 单位映射 ──
+UNIT_MAP = {
+    COL_PWM: "μs",
+    COL_THROTTLE: "%",
+    COL_THRUST: "g",
+    COL_TORQUE: "N·m",
+    COL_VOLTAGE: "V",
+    COL_CURRENT: "A",
+    COL_RPM_COMM: "RPM",
+    COL_RPM_OPTICAL: "RPM",
+    COL_ELEC_POWER: "W",
+    COL_SHAFT_POWER: "W",
+    COL_SYS_EFF: "g/W",
+    COL_PROP_EFF: "g/W",
+    COL_DRIVE_EFF: "%",
+    COL_IR_TEMP: "℃",
+    COL_AH: "Ah",
+    COL_WH: "Wh",
+}
+
+# ── 台阶配置 ──
+THROTTLE_STEPS = [20, 25, 30, 35, 40, 45, 50, 55, 60, 65]
+SAMPLING_RATE_HZ = 10
+STABILIZATION_SECONDS = 2.0
+MIN_STEP_DURATION_SECONDS = 5.0
+MIN_SAMPLES_PER_STEP = 10
