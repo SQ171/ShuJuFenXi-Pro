@@ -97,23 +97,42 @@ def _render_file_comparison(ctx, ss_40):
 
 
 def _render_eff_trend(ss_40):
-    """力效随循环变化趋势（同一时段内的变化）"""
+    """力效随循环变化趋势（降采样 + 平滑）"""
+    from scipy.signal import savgol_filter
+
     ss_40 = ss_40.sort_values(["source_file", "cycle_num"])
     files = ss_40["source_file"].unique()
+
+    window = st.slider("平滑窗口 (循环数)", 5, 31, 11, step=2, key="eff_smooth_window",
+                       help="窗口越大曲线越平滑，选奇数")
 
     fig = go.Figure()
     colors = ["#DC143C", "#1F77B4", "#2CA02C", "#FF7F0E", "#9467BD"]
 
     for i, f in enumerate(files):
         sub = ss_40[ss_40["source_file"] == f]
+        y_raw = sub["force_eff_mean"].values
+
+        # 原始散点（淡化）
         fig.add_trace(go.Scatter(
-            y=sub["force_eff_mean"], mode="lines+markers",
-            name=f.replace(".csv", ""), marker=dict(size=4),
-            line=dict(color=colors[i % len(colors)], width=1.5),
+            y=y_raw, mode="markers",
+            name=f"{f.replace('.csv', '')} (原始)",
+            marker=dict(size=2, color=colors[i % len(colors)], opacity=0.25),
+            showlegend=True,
         ))
 
+        # 平滑曲线
+        if len(y_raw) >= window:
+            y_smooth = savgol_filter(y_raw, window, 2)
+            fig.add_trace(go.Scatter(
+                y=y_smooth, mode="lines",
+                name=f"{f.replace('.csv', '')} (平滑)",
+                line=dict(color=colors[i % len(colors)], width=2.5),
+                showlegend=True,
+            ))
+
     fig.update_layout(base_layout(
-        "力效随循环变化趋势 @40%油门",
-        xlabel="循环序号", ylabel="力效 (g/W)", height=350,
+        "力效随循环变化趋势 @40%油门（降采样平滑）",
+        xlabel="循环序号", ylabel="力效 (g/W)", height=400,
     ))
     st.plotly_chart(fig, use_container_width=True)
