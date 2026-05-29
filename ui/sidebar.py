@@ -1,9 +1,9 @@
 """侧边栏：文件上传、参数控制、导航"""
 
 import os
-import glob
+import tempfile
 import streamlit as st
-from analysis.pipeline import AnalysisContext, run_pipeline
+from analysis.pipeline import run_pipeline
 from ui.state import set_ctx, init_state
 
 
@@ -13,25 +13,30 @@ def render_sidebar():
     with st.sidebar:
         st.header("数据加载")
 
-        data_dir = st.text_input(
-            "CSV数据目录",
-            value=st.session_state.get("data_dir", r"C:\Users\29432\Desktop\阶梯油门可靠性测试数据"),
-            help="输入包含 MET-V6 CSV 文件的目录路径",
+        uploaded_files = st.file_uploader(
+            "选择 CSV 文件",
+            type=["csv"],
+            accept_multiple_files=True,
+            help="可多选或拖拽 MET-V6 测试台 CSV 文件",
         )
 
         if st.button("加载数据", type="primary", use_container_width=True):
-            if data_dir and os.path.isdir(data_dir):
+            if uploaded_files:
                 with st.spinner("正在加载数据..."):
-                    files = sorted(glob.glob(os.path.join(data_dir, "*.csv")))
-                    if not files:
-                        st.error("未找到 CSV 文件")
-                        return
-                    ctx = run_pipeline(files)
+                    tmpdir = tempfile.mkdtemp()
+                    file_paths = []
+                    for uploaded in uploaded_files:
+                        tmp_path = os.path.join(tmpdir, uploaded.name)
+                        with open(tmp_path, "wb") as f:
+                            f.write(uploaded.getbuffer())
+                        file_paths.append(tmp_path)
+
+                    ctx = run_pipeline(file_paths)
                     set_ctx(ctx)
-                    st.session_state["data_dir"] = data_dir
-                    st.success(f"加载完成: {len(files)} 个文件, {ctx.runtime_info.total_runtime_seconds/3600:.2f}h")
+                    st.success(f"加载完成: {len(file_paths)} 个文件, "
+                               f"{ctx.runtime_info.total_runtime_seconds/3600:.2f}h")
             else:
-                st.error("请选择有效的目录")
+                st.error("请先选择 CSV 文件")
 
         st.divider()
         st.header("参数设置")
