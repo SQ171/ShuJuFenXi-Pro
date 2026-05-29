@@ -24,11 +24,11 @@ def plot_health_radar(scores: dict[str, float]) -> go.Figure:
         name="当前健康评分",
     ))
     fig.add_trace(go.Scatterpolar(
-        r=[1.0] * len(categories) + [1.0],
+        r=[0.6] * len(categories) + [0.6],
         theta=categories + [categories[0]],
         fill="none",
-        line=dict(color="#CCCCCC", width=1, dash="dash"),
-        name="满分线 (新电机)",
+        line=dict(color="#FF9800", width=1.5, dash="dash"),
+        name="预警线 (0.6)",
     ))
 
     fig.update_layout(
