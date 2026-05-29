@@ -167,12 +167,12 @@ HEALTH_STANDARDS: dict[Dimension, dict] = {
         "description": "温度退化率",
     },
     Dimension.ENERGY: {
-        "metric": "累计能耗",
+        "metric": "电功率",
         "throttle": 40.0,
-        "full_health": 0.0,
-        "failure": 10.0,
-        "unit": "Wh/h",
-        "description": "能耗退化率",
+        "full_health": 0.0,          # 同样工况功耗不涨 = 满分
+        "failure": 20.0,            # 同样工况功耗涨 20W/h = 报废
+        "unit": "W/h",
+        "description": "功耗退化率",
     },
 }
 

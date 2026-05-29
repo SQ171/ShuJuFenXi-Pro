@@ -64,10 +64,9 @@ def compute_health_scores(degradation_results: list,
         full = std["full_health"]
         fail = std["failure"]
 
-        # 匹配该维度、该油门的趋势分析结果
+        # 按指标名称跨维度匹配
         matched = [r for r in degradation_results
-                   if r.dimension == dim
-                   and r.analysis_type.value == "趋势分析"
+                   if r.analysis_type.value == "趋势分析"
                    and r.nominal_throttle == throttle
                    and r.metric_or_feature == metric_key]
 
