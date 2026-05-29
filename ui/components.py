@@ -13,11 +13,11 @@ def render_kpi_cards(ctx) -> None:
     cols[1].metric("数据文件数", len(ctx.test_runs))
     if ctx.step_summary is not None:
         cols[2].metric("总循环数", ctx.step_summary["cycle_num"].nunique())
-    if ctx.step_summary is not None:
-        eff_cols = [c for c in ctx.step_summary.columns if c.startswith("force_eff_")]
-        if eff_cols and "force_eff_mean" in ctx.step_summary.columns:
-            avg_eff = ctx.step_summary["force_eff_mean"].mean()
-            cols[3].metric("平均力效", f"{avg_eff:.1f} g/W")
+    if ctx.step_summary is not None and "force_eff_mean" in ctx.step_summary.columns:
+        ss_40 = ctx.step_summary[ctx.step_summary["nominal_throttle"] == 40.0]
+        if not ss_40.empty:
+            eff_40 = ss_40["force_eff_mean"].mean()
+            cols[3].metric("力效 @40%油门", f"{eff_40:.1f} g/W")
 
 
 def render_metric_selector(label: str = "选择指标", key: str = "metric_selector"):
