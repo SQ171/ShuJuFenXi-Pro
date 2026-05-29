@@ -81,14 +81,13 @@ def _render_file_comparison(ctx, ss_40):
     fig = go.Figure()
     fig.add_trace(go.Bar(
         x=labels, y=means,
-        error_y=dict(type="data", array=stds),
         marker_color=FORCE_EFF_COLOR,
         text=[f"{m:.2f}" for m in means],
         textposition="auto",
     ))
 
-    y_min = max(0, min(means) - max(stds) - 0.1)
-    y_max = max(means) + max(stds) + 0.1
+    y_min = max(0, min(means) - 0.1)
+    y_max = max(means) + 0.1
 
     for r in ctx.degradation_report.force_eff_results:
         if r.nominal_throttle == 40.0:
