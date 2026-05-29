@@ -1,13 +1,12 @@
 """概览页：KPI卡片 + 力效对比 + 健康雷达图"""
 
 import streamlit as st
-import numpy as np
+import pandas as pd
 import plotly.graph_objects as go
 from ui.state import get_ctx, is_data_loaded
 from ui.components import render_kpi_cards
 from visualization.health_radar import plot_health_radar, compute_health_scores
 from visualization.common import base_layout, FORCE_EFF_COLOR
-from config import get_metric_by_key
 
 
 def show():
@@ -33,6 +32,8 @@ def show():
 
             with col2:
                 _render_eff_trend(ss_40)
+
+            _render_eff_comparison_table(ctx, ss_40)
 
     st.divider()
 
@@ -136,3 +137,32 @@ def _render_eff_trend(ss_40):
         xlabel="循环序号", ylabel="力效 (g/W)", height=400,
     ))
     st.plotly_chart(fig, use_container_width=True)
+
+
+def _render_eff_comparison_table(ctx, ss_40):
+    """修正前后力效对比 + 环境条件"""
+    st.subheader("修正前后力效对比 @40%油门")
+
+    rows = []
+    for run in ctx.test_runs:
+        sub = ss_40[ss_40["source_file"] == run.filename]
+        if sub.empty:
+            continue
+
+        corrected_eff = sub["force_eff_mean"].mean()
+        cf = run.correction_factor if run.correction_factor else 1.0
+        raw_eff = corrected_eff / cf
+
+        md = run.metadata
+        rows.append({
+            "文件": run.filename.replace(".csv", ""),
+            "原始力效 (g/W)": f"{raw_eff:.1f}",
+            "修正后力效 (g/W)": f"{corrected_eff:.1f}",
+            "修正系数": f"{cf:.4f}",
+            "温度 (℃)": md.get("环境温度", "-"),
+            "气压 (kPa)": md.get("大气压", "-"),
+            "湿度 (%RH)": md.get("环境湿度", "-"),
+            "循环数": len(sub),
+        })
+
+    st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
