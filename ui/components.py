@@ -14,16 +14,23 @@ def render_kpi_cards(ctx) -> None:
     if ctx.step_summary is not None:
         cols[2].metric("总循环数", ctx.step_summary["cycle_num"].nunique())
 
-    # 力效变化趋势：首尾对比
     if ctx.step_summary is not None and "force_eff_mean" in ctx.step_summary.columns:
-        ss_40 = ctx.step_summary[ctx.step_summary["nominal_throttle"] == 40.0].copy()
+        ss_40 = ctx.step_summary[ctx.step_summary["nominal_throttle"] == 40.0]
         if not ss_40.empty:
-            first_eff = ss_40["force_eff_mean"].iloc[0]
-            last_eff = ss_40["force_eff_mean"].iloc[-1]
-            delta = last_eff - first_eff
-            cols[3].metric("力效 @40%油门", f"{last_eff:.1f} g/W",
-                           delta=f"{delta:+.1f} g/W",
-                           delta_color="normal" if delta >= 0 else "inverse")
+            current_eff = ss_40["force_eff_mean"].iloc[-1]
+
+            # 退化率来自退化分析
+            slope_str = ""
+            slope_color = "off"
+            for r in ctx.degradation_report.force_eff_results:
+                if r.nominal_throttle == 40.0 and r.analysis_type.value == "趋势分析":
+                    slope_str = f"{r.slope_per_hour:+.4f} g/W/h"
+                    slope_color = "normal" if r.slope_per_hour >= 0 else "inverse"
+                    break
+
+            cols[3].metric("力效 @40%油门", f"{current_eff:.1f} g/W",
+                           delta=slope_str if slope_str else None,
+                           delta_color=slope_color)
 
 
 def render_metric_selector(label: str = "选择指标", key: str = "metric_selector"):
