@@ -83,17 +83,21 @@ def _render_file_comparison(ctx, ss_40):
         x=labels, y=means,
         error_y=dict(type="data", array=stds),
         marker_color=FORCE_EFF_COLOR,
-        text=[f"{m:.1f}" for m in means],
+        text=[f"{m:.2f}" for m in means],
         textposition="auto",
     ))
 
-    # 用退化分析结果标注退化率
+    y_min = max(0, min(means) - max(stds) - 0.1)
+    y_max = max(means) + max(stds) + 0.1
+
     for r in ctx.degradation_report.force_eff_results:
         if r.nominal_throttle == 40.0:
             st.caption(f"退化率: {r.slope_per_hour:.4f} g/W/h | R²={r.r_squared:.3f} | p={r.p_value:.4f}")
             break
 
-    fig.update_layout(base_layout("各文件力效均值对比", xlabel="文件", ylabel="力效 (g/W)", height=350))
+    layout = base_layout("各文件力效均值对比", xlabel="文件", ylabel="力效 (g/W)", height=350)
+    layout.yaxis.range = [y_min, y_max]
+    fig.update_layout(layout)
     st.plotly_chart(fig, use_container_width=True)
 
 
