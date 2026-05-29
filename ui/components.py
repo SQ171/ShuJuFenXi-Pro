@@ -13,11 +13,17 @@ def render_kpi_cards(ctx) -> None:
     cols[1].metric("数据文件数", len(ctx.test_runs))
     if ctx.step_summary is not None:
         cols[2].metric("总循环数", ctx.step_summary["cycle_num"].nunique())
+
+    # 力效变化趋势：首尾对比
     if ctx.step_summary is not None and "force_eff_mean" in ctx.step_summary.columns:
-        ss_40 = ctx.step_summary[ctx.step_summary["nominal_throttle"] == 40.0]
+        ss_40 = ctx.step_summary[ctx.step_summary["nominal_throttle"] == 40.0].copy()
         if not ss_40.empty:
-            eff_40 = ss_40["force_eff_mean"].mean()
-            cols[3].metric("力效 @40%油门", f"{eff_40:.1f} g/W")
+            first_eff = ss_40["force_eff_mean"].iloc[0]
+            last_eff = ss_40["force_eff_mean"].iloc[-1]
+            delta = last_eff - first_eff
+            cols[3].metric("力效 @40%油门", f"{last_eff:.1f} g/W",
+                           delta=f"{delta:+.1f} g/W",
+                           delta_color="normal" if delta >= 0 else "inverse")
 
 
 def render_metric_selector(label: str = "选择指标", key: str = "metric_selector"):
