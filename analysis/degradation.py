@@ -37,7 +37,9 @@ def analyze_degradation(ctx: AnalysisContext) -> AnalysisContext:
                 if len(values) < DEGRADATION_MIN_SAMPLES:
                     continue
 
-                x = np.arange(len(values))
+                # 估算每个循环占用的时间 (小时)
+                cycle_hours = ctx.runtime_info.total_runtime_seconds / 3600 / max(ctx.step_summary["cycle_num"].nunique(), 1)
+                x = np.arange(len(values)) * cycle_hours
                 result = _linear_regression(x, values, metric.display_name, metric.dimension,
                                             AnalysisType.TREND, throttle)
                 if result:
@@ -99,7 +101,8 @@ def _linear_regression(x: np.ndarray, y: np.ndarray, name: str,
         return None
 
     slope, intercept, r_value, p_value, _ = stats.linregress(x_clean, y_clean)
-    slope_per_hour = slope * 3600
+    # x is already in hours, slope = Δy per hour
+    slope_per_hour = slope
 
     return DegradationResult(
         metric_or_feature=name,

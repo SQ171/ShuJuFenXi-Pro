@@ -129,8 +129,52 @@ FEATURE_REGISTRY: list[FeatureDef] = [
 DEGRADATION_MIN_SAMPLES = 5
 
 # ═══════════════════════════════════════════════════════════════
-# 图表配色
+# 健康评分标准 — 满血(1.0) ↔ 报废(0.0) 线性映射
+# 每个维度取退化率(slope_per_hour)，在 [failure, full_health] 区间线性插值
 # ═══════════════════════════════════════════════════════════════
+
+HEALTH_STANDARDS: dict[Dimension, dict] = {
+    Dimension.FORCE_EFF: {
+        "metric": "系统力效",
+        "throttle": 40.0,
+        "full_health": 0.0,          # 退化率 ≥ 0 = 满分
+        "failure": -1.0,            # 退化率 ≤ -1.0 g/W/h = 报废
+        "unit": "g/W/h",
+        "description": "力效退化率",
+    },
+    Dimension.ELECTRICAL: {
+        "metric": "电流",
+        "throttle": 40.0,
+        "full_health": 0.0,
+        "failure": 0.5,
+        "unit": "A/h",
+        "description": "电流退化率",
+    },
+    Dimension.MECHANICAL: {
+        "metric": "拉力",
+        "throttle": 40.0,
+        "full_health": 0.0,
+        "failure": -10.0,
+        "unit": "g/h",
+        "description": "推力退化率",
+    },
+    Dimension.THERMAL: {
+        "metric": "红外温度",
+        "throttle": 40.0,
+        "full_health": 0.0,
+        "failure": 5.0,
+        "unit": "C/h",
+        "description": "温度退化率",
+    },
+    Dimension.ENERGY: {
+        "metric": "累计能耗",
+        "throttle": 40.0,
+        "full_health": 0.0,
+        "failure": 10.0,
+        "unit": "Wh/h",
+        "description": "能耗退化率",
+    },
+}
 
 # 查询辅助
 

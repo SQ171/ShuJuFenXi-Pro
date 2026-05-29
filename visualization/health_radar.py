@@ -7,33 +7,28 @@ from core.models import Dimension
 from visualization.common import FORCE_EFF_COLOR
 
 
-def plot_health_radar(scores: dict[str, float]) -> go.Figure:
-    """绘制五维健康雷达图
+_NO_DATA_FILL = 0.5
 
-    Args:
-        scores: {"力效": 0.85, "电气健康": 0.72, "机械健康": 0.68, "热特征": 0.90, "能耗": 0.75}
-                值范围 0-1，1=最佳健康状态
-    """
+
+def plot_health_radar(scores: dict[str, float]) -> go.Figure:
     categories = list(scores.keys())
     values = list(scores.values())
 
     fig = go.Figure()
     fig.add_trace(go.Scatterpolar(
-        r=values + [values[0]],  # 闭合成环
+        r=values + [values[0]],
         theta=categories + [categories[0]],
         fill="toself",
         fillcolor="rgba(220, 20, 60, 0.3)",
         line=dict(color=FORCE_EFF_COLOR, width=2),
         name="当前健康评分",
     ))
-
-    # 添加参考线 (满分)
     fig.add_trace(go.Scatterpolar(
         r=[1.0] * len(categories) + [1.0],
         theta=categories + [categories[0]],
         fill="none",
         line=dict(color="#CCCCCC", width=1, dash="dash"),
-        name="基准线",
+        name="满分线 (新电机)",
     ))
 
     fig.update_layout(
@@ -48,22 +43,48 @@ def plot_health_radar(scores: dict[str, float]) -> go.Figure:
     return fig
 
 
-def compute_health_scores(degradation_results: list, step_summary: pd.DataFrame) -> dict[str, float]:
-    """根据退化分析结果计算各维度健康评分 (0-1, 1=最健康)"""
+def compute_health_scores(degradation_results: list,
+                          step_summary: pd.DataFrame) -> dict[str, float]:
+    """根据 HEALTH_STANDARDS 计算各维度健康评分
+
+    满血(1.0) = 新电机状态，报废(0.0) = 不合格
+    退化率在 [failure, full_health] 区间线性映射
+    """
+    from config import HEALTH_STANDARDS
+
     scores = {}
     for dim in Dimension:
-        dim_results = [r for r in degradation_results if r.dimension == dim]
-        if not dim_results:
-            scores[dim.value] = 0.8  # 无数据时默认中等
+        std = HEALTH_STANDARDS.get(dim)
+        if std is None:
+            scores[dim.value] = _NO_DATA_FILL
             continue
 
-        avg_r2 = np.mean([r.r_squared for r in dim_results])
-        avg_slope = np.mean([abs(r.slope_per_hour) for r in dim_results])
+        metric_key = std["metric"]
+        throttle = std["throttle"]
+        full = std["full_health"]
+        fail = std["failure"]
 
-        r2_score = max(0, 1.0 - avg_r2)  # R²越低越不确定，扣分越少
-        slope_score = max(0, 1.0 - avg_slope * 100)  # 退化率越大扣分越多
+        # 匹配该维度、该油门的趋势分析结果
+        matched = [r for r in degradation_results
+                   if r.dimension == dim
+                   and r.analysis_type.value == "趋势分析"
+                   and r.nominal_throttle == throttle
+                   and r.metric_or_feature == metric_key]
 
-        score = 0.5 * r2_score + 0.5 * slope_score
-        scores[dim.value] = float(np.clip(score, 0.0, 1.0))
+        if not matched:
+            scores[dim.value] = _NO_DATA_FILL
+            continue
+
+        slope = matched[0].slope_per_hour
+
+        # health_direction: full > fail means higher is better
+        # 线性映射: score = (slope - fail) / (full - fail)
+        if full == fail:
+            score = _NO_DATA_FILL
+        else:
+            score = (slope - fail) / (full - fail)
+            score = float(np.clip(score, 0.0, 1.0))
+
+        scores[dim.value] = score
 
     return scores
